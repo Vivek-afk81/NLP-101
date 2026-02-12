@@ -2,6 +2,30 @@ from datetime import datetime
 import webbrowser
 import requests
 import os
+import speech_recognition as sr
+import pyttsx3
+
+
+engine = pyttsx3.init()
+engine.setProperty('rate', 150)  # Speed percent (can go over 100)
+engine.setProperty('volume', 0.9)  # Volume 0-1
+def speek(text):
+    engine.say(text)
+    engine.runAndWait()
+
+def listen():
+    rec = sr.Recognizer() #access microphone 
+    with sr.Microphone() as source:
+        print("Listening...")
+        audio = rec.listen(source)
+    try:
+        message = rec.recognize_google(audio) #recognize voice
+        print(f"You said: {message}")
+        return message.lower()
+    except sr.UnknownValueError:
+        print("Sorry, I did not understand that.")
+        return ""
+
 
 date_msgs = ["what's the date today?", "tell me the date", "date today", "current date"]
 time_msgs = ["what's the time?", "tell me the time", "current time", "time now"]
@@ -52,7 +76,7 @@ def weather(city):
 
 chat=True
 while chat:
-    user_msg = input("enter your message: ").lower()
+    user_msg = listen()
 
     if user_msg in greet_msgs:
         print("friday:Hello! How are you?")
