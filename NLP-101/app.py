@@ -1,0 +1,123 @@
+from datetime import datetime
+import webbrowser
+import requests
+import os
+import speech_recognition as sr
+import pyttsx3
+
+
+engine = pyttsx3.init()
+engine.setProperty('rate', 150)  # Speed percent (can go over 100)
+engine.setProperty('volume', 0.9)  # Volume 0-1
+def speek(text):
+    engine.say(text)
+    engine.runAndWait()
+
+def listen():
+    rec = sr.Recognizer() #access microphone 
+    with sr.Microphone() as source:
+        print("Listening...")
+        audio = rec.listen(source)
+    try:
+        message = rec.recognize_google(audio) #recognize voice
+        print(f"You said: {message}")
+        return message.lower()
+    except sr.UnknownValueError:
+        print("Sorry, I did not understand that.")
+        return ""
+
+
+date_msgs = ["what's the date today?", "tell me the date", "date today", "current date"]
+time_msgs = ["what's the time?", "tell me the time", "current time", "time now"]
+greet_msgs = ["hi", "hello", "hey", "greetings", "what's up"]
+websites_msgs = ["google", "youtube", "facebook", "twitter"]
+news_msgs = ["give me the latest news", "news update", "latest news", "news headlines"]
+temp_msgs = ["temperature","temp","weather","temperature in","weather in"]
+
+
+API_KEY = os.getenv("NEWS_API")
+def fetch_latest_news():
+    url = f"https://newsapi.org/v2/everything?q=tesla&sortBy=publishedAt&apiKey={API_KEY}"
+    response = requests.get(url)
+    print("Status:", response.status_code)
+
+    if response.status_code==200:
+        data =response.json()
+        articles= data.get("articles", [])
+        for i,article in enumerate(articles[:10], 1):
+            print(f"{i}.{article['title']}")
+    else:
+        print("Failed to fetch news.")
+def define_word(word):
+    url=f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}"
+    response=requests.get(url)
+    if response.status_code==200:
+        data=response.json()
+        definition=data[0]['meanings'][0]['definitions'][0]['definition']
+        print(f"The definition of {word} is: {definition}")
+    else:
+        print("OOH Its a new word for me!")
+
+WEATHER_API_KEY = os.getenv("WEATHER_API")
+
+def weather(city):
+    url = f"http://api.weatherapi.com/v1/current.json?key={WEATHER_API_KEY}&q={city}"
+    r = requests.get(url)
+
+    if r.status_code == 200:
+        data = r.json()
+        temp = data["current"]["temp_c"]
+        condition = data["current"]["condition"]["text"]
+        print(f"friday: {city.title()} is {temp}°C, {condition}")
+    else:
+        print("friday: Couldn't get weather.")
+
+
+
+chat=True
+while chat:
+    user_msg = listen()
+
+    if user_msg in greet_msgs:
+        print("friday:Hello! How are you?")
+
+    elif user_msg =="how high are you":
+        print("friday:It's high, how are you?")
+
+    elif user_msg =="exit":
+        print("friday:Goodbye! Have a great day!")
+        chat = False
+
+    elif "open" in user_msg and any(site in user_msg for site in websites_msgs):
+        site =user_msg.split()[-1]
+        webbrowser.open(f"https://www.{site}.com")
+
+    elif "calculate" in user_msg:
+        try:
+            expression = user_msg.split("calculate")[-1].strip()
+            result = eval(expression)
+            print(f"friday: The result of your expression {expression} is {result}")
+        except:
+            print("friday: Sorry, I couldn't calculate that expression.")
+
+    elif user_msg in date_msgs:
+        print("friday: Today's date is", datetime.now().strftime("%Y-%m-%d"))
+
+    elif user_msg in time_msgs:
+        print("friday: The current time is", datetime.now().strftime("%I:%M:%S %p"))
+
+    elif user_msg in news_msgs:
+        print("friday: Here are the latest news headlines:")
+        fetch_latest_news()
+
+    elif "define" in user_msg:
+        word = user_msg.split("define")[-1].strip()
+        define_word(word)
+
+    elif any(msg in user_msg for msg in temp_msgs):
+        city = user_msg.split()[-1] 
+        weather(city)
+
+
+    else:
+        print("friday: I'm sorry, I can only respond to greetings at the moment.")
